@@ -1,0 +1,19 @@
+{
+  "name": "tienda-ojotas",
+  "version": "1.0.0",
+  "description": "Tienda online con panel de admin y pago con Mercado Pago",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "hash-password": "node src/hash-password.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mercadopago": "^2.0.15",
+    "multer": "^1.4.5-lts.1"
+  }
+}

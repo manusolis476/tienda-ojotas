@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pago aprobado</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="result-box">
+    <h1>Pago recibido</h1>
+    <p>Tu pedido quedó confirmado. Código: <strong id="codigo"></strong></p>
+    <p><a href="/">Volver a la tienda</a></p>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById("codigo").textContent = params.get("codigo") || "-";
+  </script>
+</body>
+</html>

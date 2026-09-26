@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ojota-clasica",
+    "name": "Ojota clásica",
+    "price": 12000,
+    "image": "",
+    "sizes": [
+      {
+        "size": "39",
+        "available": true
+      },
+      {
+        "size": "40",
+        "available": true
+      },
+      {
+        "size": "41",
+        "available": false
+      },
+      {
+        "size": "42",
+        "available": true
+      },
+      {
+        "size": "43",
+        "available": false
+      }
+    ],
+    "models": [
+      "Negro",
+      "Marrón"
+    ]
+  },
+  {
+    "id": "ojota-trekking",
+    "name": "Ojota trekking",
+    "price": 16500,
+    "image": "",
+    "sizes": [
+      {
+        "size": "39",
+        "available": true
+      },
+      {
+        "size": "40",
+        "available": false
+      },
+      {
+        "size": "41",
+        "available": true
+      },
+      {
+        "size": "42",
+        "available": true
+      },
+      {
+        "size": "43",
+        "available": true
+      }
+    ],
+    "models": [
+      "Verde",
+      "Gris"
+    ]
+  },
+  {
+    "id": "ojota-cuero",
+    "name": "Ojota cuero",
+    "price": 21000,
+    "image": "",
+    "sizes": [
+      {
+        "size": "38",
+        "available": false
+      },
+      {
+        "size": "39",
+        "available": true
+      },
+      {
+        "size": "40",
+        "available": true
+      },
+      {
+        "size": "41",
+        "available": true
+      },
+      {
+        "size": "42",
+        "available": false
+      }
+    ],
+    "models": [
+      "Marrón claro",
+      "Marrón oscuro"
+    ]
+  }
+]

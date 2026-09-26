@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brilla Siempre</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+  <p class="store-name">Brilla Siempre</p>
+  <p class="store-tag">Elegí talle y modelo, y pagá directo online.</p>
+  <p class="whatsapp-note" id="whatsappNote"></p>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<button id="cartButton" class="cart-button" type="button">
+  🛒 <span id="cartCount">0</span>
+</button>
+
+<div id="cartOverlay" class="cart-overlay"></div>
+<aside id="cartPanel" class="cart-panel">
+  <div class="cart-panel-header">
+    <p class="store-name" style="font-size:1.2rem;margin:0;">Tu pedido</p>
+    <button id="closeCart" class="btn-admin" type="button">Cerrar</button>
+  </div>
+  <div id="cartItems" class="cart-items"></div>
+  <div class="cart-total" id="cartTotal"></div>
+  <button id="checkoutBtn" class="btn btn-pay" disabled>Pagar todo</button>
+</aside>
+
+<script src="/js/store.js"></script>
+</body>
+</html>
