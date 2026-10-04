@@ -5,119 +5,198 @@ const { requireAdmin } = require("../auth");
 const router = express.Router();
 
 // Público: catálogo completo
-router.get("/", (req, res) => {
-  res.json(db.getProducts());
+router.get("/", async (req, res) => {
+  try {
+    res.json(await db.getProducts());
+  } catch (err) {
+    console.error("Error leyendo productos", err);
+    res.status(500).json({ error: "No se pudieron cargar los productos" });
+  }
 });
 
 // Admin: reemplaza la lista de talles disponibles de un producto
-router.put("/:id/sizes", requireAdmin, (req, res) => {
-  const { sizes } = req.body;
-  if (!Array.isArray(sizes)) {
-    return res.status(400).json({ error: "Formato de talles inválido" });
+router.put("/:id/sizes", requireAdmin, async (req, res) => {
+  try {
+    const { sizes } = req.body;
+    if (!Array.isArray(sizes)) {
+      return res.status(400).json({ error: "Formato de talles inválido" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.sizes = sizes;
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando talles", err);
+    res.status(500).json({ error: "No se pudo guardar" });
   }
-  const products = db.getProducts();
-  const product = products.find((p) => p.id === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: "Producto no encontrado" });
-  }
-  product.sizes = sizes;
-  db.saveProducts(products);
-  res.json(product);
 });
 
 // Admin: actualiza el precio de un producto
-router.put("/:id/price", requireAdmin, (req, res) => {
-  const { price } = req.body;
-  if (typeof price !== "number" || price < 0) {
-    return res.status(400).json({ error: "Precio inválido" });
+router.put("/:id/price", requireAdmin, async (req, res) => {
+  try {
+    const { price } = req.body;
+    if (typeof price !== "number" || price < 0) {
+      return res.status(400).json({ error: "Precio inválido" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.price = price;
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando precio", err);
+    res.status(500).json({ error: "No se pudo guardar" });
   }
-  const products = db.getProducts();
-  const product = products.find((p) => p.id === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: "Producto no encontrado" });
-  }
-  product.price = price;
-  db.saveProducts(products);
-  res.json(product);
 });
 
 // Admin: actualiza el nombre de un producto
-router.put("/:id/name", requireAdmin, (req, res) => {
-  const { name } = req.body;
-  if (typeof name !== "string" || !name.trim()) {
-    return res.status(400).json({ error: "Nombre inválido" });
+router.put("/:id/name", requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Nombre inválido" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.name = name.trim();
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando nombre", err);
+    res.status(500).json({ error: "No se pudo guardar" });
   }
-  const products = db.getProducts();
-  const product = products.find((p) => p.id === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: "Producto no encontrado" });
-  }
-  product.name = name.trim();
-  db.saveProducts(products);
-  res.json(product);
 });
 
-// Admin: actualiza la imagen de un producto (recibe la URL que devolvió /api/upload)
-router.put("/:id/image", requireAdmin, (req, res) => {
-  const { image } = req.body;
-  if (typeof image !== "string") {
-    return res.status(400).json({ error: "Imagen inválida" });
+// Admin: actualiza las fotos de un producto (lista de URLs que devolvió /api/upload)
+router.put("/:id/images", requireAdmin, async (req, res) => {
+  try {
+    const { images } = req.body;
+    if (!Array.isArray(images) || !images.every((i) => typeof i === "string")) {
+      return res.status(400).json({ error: "Formato de imágenes inválido" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.images = images;
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando imágenes", err);
+    res.status(500).json({ error: "No se pudo guardar" });
   }
-  const products = db.getProducts();
-  const product = products.find((p) => p.id === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: "Producto no encontrado" });
+});
+
+// Admin: actualiza la descripción de un producto
+router.put("/:id/description", requireAdmin, async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (typeof description !== "string") {
+      return res.status(400).json({ error: "Descripción inválida" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.description = description;
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando descripción", err);
+    res.status(500).json({ error: "No se pudo guardar" });
   }
-  product.image = image;
-  db.saveProducts(products);
-  res.json(product);
+});
+
+// Admin: actualiza los colores de piedra disponibles de un producto
+router.put("/:id/stone-colors", requireAdmin, async (req, res) => {
+  try {
+    const { stoneColors } = req.body;
+    if (!Array.isArray(stoneColors) || !stoneColors.every((c) => typeof c === "string")) {
+      return res.status(400).json({ error: "Formato de colores de piedra inválido" });
+    }
+    const products = await db.getProducts();
+    const product = products.find((p) => p.id === req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    product.stoneColors = stoneColors;
+    await db.saveProducts(products);
+    res.json(product);
+  } catch (err) {
+    console.error("Error guardando colores de piedra", err);
+    res.status(500).json({ error: "No se pudo guardar" });
+  }
 });
 
 // Admin: crea un producto nuevo
-router.post("/", requireAdmin, (req, res) => {
-  const { name, price, sizes, models, image } = req.body;
-  if (typeof name !== "string" || !name.trim()) {
-    return res.status(400).json({ error: "Nombre inválido" });
+router.post("/", requireAdmin, async (req, res) => {
+  try {
+    const { name, price, sizes, models, images, description, stoneColors } = req.body;
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Nombre inválido" });
+    }
+    if (typeof price !== "number" || price < 0) {
+      return res.status(400).json({ error: "Precio inválido" });
+    }
+    const products = await db.getProducts();
+    const slug = name
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    let id = slug || "producto";
+    let n = 1;
+    while (products.some((p) => p.id === id)) {
+      id = `${slug}-${n++}`;
+    }
+    const product = {
+      id,
+      name: name.trim(),
+      price,
+      images: Array.isArray(images) ? images : [],
+      description: typeof description === "string" ? description : "",
+      sizes: Array.isArray(sizes) ? sizes : [],
+      models: Array.isArray(models) && models.length ? models : ["Único"],
+      stoneColors: Array.isArray(stoneColors) ? stoneColors : [],
+    };
+    products.push(product);
+    await db.saveProducts(products);
+    res.status(201).json(product);
+  } catch (err) {
+    console.error("Error creando producto", err);
+    res.status(500).json({ error: "No se pudo crear el producto" });
   }
-  if (typeof price !== "number" || price < 0) {
-    return res.status(400).json({ error: "Precio inválido" });
-  }
-  const products = db.getProducts();
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  let id = slug || "producto";
-  let n = 1;
-  while (products.some((p) => p.id === id)) {
-    id = `${slug}-${n++}`;
-  }
-  const product = {
-    id,
-    name: name.trim(),
-    price,
-    image: typeof image === "string" ? image : "",
-    sizes: Array.isArray(sizes) ? sizes : [],
-    models: Array.isArray(models) && models.length ? models : ["Único"],
-  };
-  products.push(product);
-  db.saveProducts(products);
-  res.status(201).json(product);
 });
 
 // Admin: borra un producto
-router.delete("/:id", requireAdmin, (req, res) => {
-  const products = db.getProducts();
-  const idx = products.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "Producto no encontrado" });
+router.delete("/:id", requireAdmin, async (req, res) => {
+  try {
+    const products = await db.getProducts();
+    const idx = products.findIndex((p) => p.id === req.params.id);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+    products.splice(idx, 1);
+    await db.saveProducts(products);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Error borrando producto", err);
+    res.status(500).json({ error: "No se pudo borrar" });
   }
-  products.splice(idx, 1);
-  db.saveProducts(products);
-  res.json({ ok: true });
 });
 
 module.exports = router;

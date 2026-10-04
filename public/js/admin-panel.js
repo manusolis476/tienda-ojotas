@@ -22,6 +22,7 @@ async function uploadImage(file) {
   return data.url;
 }
 
+// Editor de talles: cada uno se puede marcar agotado/disponible, o sacar con la X.
 function renderSizeEditor(container, sizes, newSizeInput, addSizeBtn) {
   function renderSizes() {
     container.innerHTML = "";
@@ -74,6 +75,93 @@ function renderSizeEditor(container, sizes, newSizeInput, addSizeBtn) {
   return renderSizes;
 }
 
+// Editor simple de lista de texto (para colores de piedra): agregar / sacar con X.
+function renderTagEditor(container, items, newInput, addBtn) {
+  function render() {
+    container.innerHTML = "";
+    items.forEach((value, idx) => {
+      const chip = document.createElement("span");
+      chip.style.display = "inline-flex";
+      chip.style.alignItems = "center";
+      chip.style.gap = ".3rem";
+      chip.className = "chip";
+      chip.style.cursor = "default";
+
+      const label = document.createElement("span");
+      label.textContent = value;
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "✕";
+      remove.style.cssText = "background:none;border:none;color:inherit;cursor:pointer;opacity:.6;padding:0;";
+      remove.addEventListener("click", () => {
+        items.splice(idx, 1);
+        render();
+      });
+
+      chip.appendChild(label);
+      chip.appendChild(remove);
+      container.appendChild(chip);
+    });
+  }
+  render();
+
+  addBtn.addEventListener("click", () => {
+    const value = newInput.value.trim();
+    if (!value) return;
+    if (items.includes(value)) {
+      alert("Ese valor ya está en la lista.");
+      return;
+    }
+    items.push(value);
+    newInput.value = "";
+    render();
+  });
+
+  return render;
+}
+
+// Editor de galería de fotos: miniaturas + botón para sacar cada una + subir una nueva (se agrega, no reemplaza).
+function renderGalleryEditor(container, images, fileInput) {
+  function render() {
+    container.innerHTML = "";
+    images.forEach((url, idx) => {
+      const box = document.createElement("div");
+      box.style.cssText = "position:relative;width:70px;height:70px;";
+      box.innerHTML = `
+        <img src="${url}" style="width:100%;height:100%;object-fit:cover;border:1px solid var(--line);border-radius:2px;">
+        <button type="button" title="Sacar foto"
+          style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
+                 background:var(--ink);color:var(--bg);border:none;cursor:pointer;font-size:.7rem;line-height:1;">✕</button>
+      `;
+      box.querySelector("button").addEventListener("click", () => {
+        images.splice(idx, 1);
+        render();
+      });
+      container.appendChild(box);
+    });
+  }
+  render();
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    fileInput.disabled = true;
+    try {
+      const url = await uploadImage(file);
+      images.push(url);
+      render();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      fileInput.disabled = false;
+      fileInput.value = "";
+    }
+  });
+
+  return render;
+}
+
 async function loadProducts() {
   const res = await fetch("/api/products");
   const products = await res.json();
@@ -84,17 +172,22 @@ async function loadProducts() {
   const addCard = document.createElement("div");
   addCard.className = "product";
   addCard.style.border = "2px dashed var(--line)";
-  let newImage = "";
+  let newImages = [];
+  let newStoneColors = [];
   addCard.innerHTML = `
     <p class="product-name">Agregar producto nuevo</p>
     <div class="field">
-      <label>Foto</label>
-      <div class="thumb" id="newThumb" style="max-width:140px;"></div>
+      <label>Fotos (podés subir varias)</label>
+      <div class="gallery-row" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem;"></div>
       <input type="file" accept="image/*" class="new-image-input">
     </div>
     <div class="field">
       <label>Nombre</label>
       <input type="text" class="new-name-input" placeholder="Ej: Ojota verano" style="${inputStyle}">
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea class="new-description-input" rows="3" placeholder="Detalles del producto..." style="${inputStyle}"></textarea>
     </div>
     <div class="field">
       <label>Precio</label>
@@ -108,28 +201,31 @@ async function loadProducts() {
       <label>Modelos / colores (separados por coma)</label>
       <input type="text" class="new-models-input" placeholder="Negro,Blanco" style="${inputStyle}">
     </div>
+    <div class="field">
+      <label>Colores de piedra (opcional)</label>
+      <div class="chip-row new-stone-row"></div>
+      <div style="display:flex;gap:.4rem;margin-top:.4rem;">
+        <input type="text" class="new-stone-input" placeholder="Ej: Rojo"
+          style="flex:1;padding:.4rem .5rem;border:1px solid var(--line);border-radius:2px;font-family:var(--font-body);font-size:.82rem;">
+        <button type="button" class="btn-admin new-stone-add-btn">Agregar color</button>
+      </div>
+    </div>
     <button class="btn btn-pay create-btn">Crear producto</button>
   `;
-  const newThumb = addCard.querySelector("#newThumb");
+  const newGalleryRow = addCard.querySelector(".gallery-row");
   const newImageInput = addCard.querySelector(".new-image-input");
   const newNameInput = addCard.querySelector(".new-name-input");
+  const newDescriptionInput = addCard.querySelector(".new-description-input");
   const newPriceInput = addCard.querySelector(".new-price-input");
   const newSizesInput = addCard.querySelector(".new-sizes-input");
   const newModelsInput = addCard.querySelector(".new-models-input");
+  const newStoneRow = addCard.querySelector(".new-stone-row");
+  const newStoneInput = addCard.querySelector(".new-stone-input");
+  const newStoneAddBtn = addCard.querySelector(".new-stone-add-btn");
   const createBtn = addCard.querySelector(".create-btn");
 
-  newImageInput.addEventListener("change", async () => {
-    const file = newImageInput.files[0];
-    if (!file) return;
-    newThumb.textContent = "Subiendo...";
-    try {
-      newImage = await uploadImage(file);
-      newThumb.innerHTML = `<img src="${newImage}" style="width:100%;height:100%;object-fit:cover;">`;
-    } catch (err) {
-      alert(err.message);
-      newThumb.textContent = "";
-    }
-  });
+  renderGalleryEditor(newGalleryRow, newImages, newImageInput);
+  renderTagEditor(newStoneRow, newStoneColors, newStoneInput, newStoneAddBtn);
 
   createBtn.addEventListener("click", async () => {
     const name = newNameInput.value.trim();
@@ -154,7 +250,15 @@ async function loadProducts() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price, sizes, models, image: newImage }),
+        body: JSON.stringify({
+          name,
+          price,
+          sizes,
+          models,
+          images: newImages,
+          description: newDescriptionInput.value.trim(),
+          stoneColors: newStoneColors,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo crear");
@@ -173,19 +277,22 @@ async function loadProducts() {
     const el = document.createElement("div");
     el.className = "product";
     let sizes = p.sizes.map((s) => ({ ...s })); // copia editable
-    let image = p.image || "";
+    let images = p.images && p.images.length ? [...p.images] : p.image ? [p.image] : [];
+    let stoneColors = [...(p.stoneColors || [])];
 
     el.innerHTML = `
       <div class="field">
-        <label>Foto</label>
-        <div class="thumb img-preview" style="max-width:140px;">
-          ${image ? `<img src="${image}" style="width:100%;height:100%;object-fit:cover;">` : ""}
-        </div>
+        <label>Fotos (podés subir varias)</label>
+        <div class="gallery-row" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem;"></div>
         <input type="file" accept="image/*" class="image-input">
       </div>
       <div class="field">
         <label>Nombre</label>
         <input type="text" class="name-input" value="${p.name}" style="${inputStyle}">
+      </div>
+      <div class="field">
+        <label>Descripción</label>
+        <textarea class="description-input" rows="3" style="${inputStyle}">${p.description || ""}</textarea>
       </div>
       <div class="field">
         <label>Precio</label>
@@ -200,36 +307,38 @@ async function loadProducts() {
           <button type="button" class="btn-admin add-size-btn">Agregar talle</button>
         </div>
       </div>
+      <div class="field">
+        <label>Colores de piedra (opcional)</label>
+        <div class="chip-row stone-row"></div>
+        <div style="display:flex;gap:.4rem;margin-top:.4rem;">
+          <input type="text" class="new-stone-input" placeholder="Ej: Rojo"
+            style="flex:1;padding:.4rem .5rem;border:1px solid var(--line);border-radius:2px;font-family:var(--font-body);font-size:.82rem;">
+          <button type="button" class="btn-admin add-stone-btn">Agregar color</button>
+        </div>
+      </div>
       <div style="display:flex;gap:.5rem;">
         <button class="btn btn-pay save-btn">Guardar</button>
         <button class="btn-admin delete-btn" type="button" style="border-color:#a13b3b;color:#a13b3b;">Borrar</button>
       </div>
     `;
 
-    const sizeRow = el.querySelector(".size-row");
-    const imgPreview = el.querySelector(".img-preview");
+    const galleryRow = el.querySelector(".gallery-row");
     const imageInput = el.querySelector(".image-input");
+    const sizeRow = el.querySelector(".size-row");
+    const stoneRow = el.querySelector(".stone-row");
     const nameInput = el.querySelector(".name-input");
+    const descriptionInput = el.querySelector(".description-input");
     const priceInput = el.querySelector(".price-input");
     const newSizeInput = el.querySelector(".new-size-input");
     const addSizeBtn = el.querySelector(".add-size-btn");
+    const newStoneInput = el.querySelector(".new-stone-input");
+    const addStoneBtn = el.querySelector(".add-stone-btn");
     const saveBtn = el.querySelector(".save-btn");
     const deleteBtn = el.querySelector(".delete-btn");
 
+    renderGalleryEditor(galleryRow, images, imageInput);
     renderSizeEditor(sizeRow, sizes, newSizeInput, addSizeBtn);
-
-    imageInput.addEventListener("change", async () => {
-      const file = imageInput.files[0];
-      if (!file) return;
-      imgPreview.textContent = "Subiendo...";
-      try {
-        image = await uploadImage(file);
-        imgPreview.innerHTML = `<img src="${image}" style="width:100%;height:100%;object-fit:cover;">`;
-      } catch (err) {
-        alert(err.message);
-        imgPreview.textContent = "";
-      }
-    });
+    renderTagEditor(stoneRow, stoneColors, newStoneInput, addStoneBtn);
 
     deleteBtn.addEventListener("click", async () => {
       if (!confirm(`¿Borrar "${p.name}" de la tienda? Esta acción no se puede deshacer.`)) return;
@@ -266,10 +375,20 @@ async function loadProducts() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ name: newName }),
           }),
-          fetch(`/api/products/${p.id}/image`, {
+          fetch(`/api/products/${p.id}/images`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image }),
+            body: JSON.stringify({ images }),
+          }),
+          fetch(`/api/products/${p.id}/description`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description: descriptionInput.value.trim() }),
+          }),
+          fetch(`/api/products/${p.id}/stone-colors`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stoneColors }),
           }),
         ]);
         if (results.some((r) => !r.ok)) throw new Error("No se pudo guardar");

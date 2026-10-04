@@ -2,8 +2,19 @@ const express = require("express");
 const crypto = require("crypto");
 const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const db = require("../db");
+const { requireAdmin } = require("../auth");
 
 const router = express.Router();
+
+// Admin: ver todos los pedidos con los datos de envío
+router.get("/orders", requireAdmin, async (req, res) => {
+  try {
+    res.json(await db.getOrders());
+  } catch (err) {
+    console.error("Error leyendo pedidos", err);
+    res.status(500).json({ error: "No se pudieron cargar los pedidos" });
+  }
+});
 
 function getClient() {
   return new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
@@ -18,14 +29,23 @@ function orderCode() {
 // Devuelve la URL (init_point) a la que hay que redirigir al cliente.
 router.post("/create-preference", async (req, res) => {
   try {
-    const { items: cartItems } = req.body;
+    const { items: cartItems, shipping } = req.body;
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
       return res.status(400).json({ error: "El carrito está vacío" });
+    }
+    if (
+      !shipping ||
+      !shipping.name?.trim() ||
+      !shipping.address?.trim() ||
+      !shipping.phone?.trim() ||
+      !shipping.dni?.trim()
+    ) {
+      return res.status(400).json({ error: "Faltan completar los datos de envío" });
     }
 
     const orderItems = [];
     for (const item of cartItems) {
-      const product = db.getProduct(item.productId);
+      const product = await db.getProduct(item.productId);
       if (!product) {
         return res.status(404).json({ error: `Producto no encontrado: ${item.productId}` });
       }
@@ -38,6 +58,7 @@ router.post("/create-preference", async (req, res) => {
         productName: product.name,
         size: item.size,
         model: item.model,
+        stoneColor: item.stoneColor || "",
         price: product.price,
         quantity: item.quantity && item.quantity > 0 ? item.quantity : 1,
       });
@@ -47,11 +68,17 @@ router.post("/create-preference", async (req, res) => {
     const order = {
       id: code,
       items: orderItems,
+      shipping: {
+        name: shipping.name.trim(),
+        address: shipping.address.trim(),
+        phone: shipping.phone.trim(),
+        dni: shipping.dni.trim(),
+      },
       total: orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0),
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-    db.saveOrder(order);
+    await db.saveOrder(order);
 
     const client = getClient();
     const preference = new Preference(client);
@@ -59,7 +86,9 @@ router.post("/create-preference", async (req, res) => {
       body: {
         items: orderItems.map((it) => ({
           id: it.productId,
-          title: `${it.productName} - talle ${it.size} - ${it.model}`,
+          title: `${it.productName} - talle ${it.size} - ${it.model}${
+            it.stoneColor ? " - piedra " + it.stoneColor : ""
+          }`,
           quantity: it.quantity,
           unit_price: it.price,
           currency_id: "ARS",
@@ -93,7 +122,7 @@ router.post("/webhook", async (req, res) => {
       const info = await payment.get({ id: paymentId });
       const code = info.external_reference;
       if (code) {
-        db.updateOrderStatus(code, info.status); // approved / rejected / pending / etc.
+        await db.updateOrderStatus(code, info.status); // approved / rejected / pending / etc.
       }
     }
     res.sendStatus(200);

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin - pedidos</title>
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .orders-list{max-width:800px;margin:0 auto;padding:0 1.5rem 3rem;}
+  .order-card{
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:1.2rem 1.4rem;
+    margin-bottom:1rem;
+  }
+  .order-card .top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:.6rem;
+  }
+  .order-code{font-family:var(--font-display);font-weight:600;font-size:1.1rem;}
+  .order-status{
+    font-size:.78rem;
+    padding:.2rem .5rem;
+    border-radius:2px;
+    background:var(--bg);
+    border:1px solid var(--line);
+  }
+  .order-items{font-size:.9rem;margin:.4rem 0;}
+  .order-shipping{
+    font-size:.88rem;
+    border-top:1px solid var(--line);
+    margin-top:.6rem;
+    padding-top:.6rem;
+    opacity:.9;
+  }
+  .order-shipping strong{opacity:.7;font-weight:600;}
+</style>
+</head>
+<body>
+
+<div class="admin-bar">
+  <p class="store-name" style="font-size:1.3rem;margin:0;">Pedidos</p>
+  <a class="btn-admin" href="/admin/panel.html" style="text-decoration:none;">Editar stock</a>
+  <button class="btn-admin" id="logoutBtn" type="button">Cerrar sesión</button>
+</div>
+
+<main class="orders-list" id="ordersList">
+  <p class="cart-empty">Cargando pedidos...</p>
+</main>
+
+<script src="/js/admin-pedidos.js"></script>
+</body>
+</html>
